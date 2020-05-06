@@ -1,0 +1,120 @@
+/**
+* Imports JSON data to your spreadsheet Ex: IMPORTJSON("http://myapisite.com","city/population")
+* @param url URL of your JSON data as string
+* @param xpath simplified xpath as string
+* @customfunction
+*/
+function IMPORTJSON(url,xpath){
+  
+  try{
+    // /rates/EUR
+    var res = UrlFetchApp.fetch(url);
+    var content = res.getContentText();
+    var json = JSON.parse(content);
+    
+    var patharray = xpath.split("/");
+    //Logger.log(patharray);
+    
+    for(var i=0;i<patharray.length;i++){
+      json = json[patharray[i]];
+    }
+    
+    //Logger.log(typeof(json));
+    
+    if(typeof(json) === "undefined"){
+      return "Node Not Available";
+    } else if(typeof(json) === "object"){
+      var tempArr = [];
+      
+      for(var obj in json){
+        tempArr.push([obj,json[obj]]);
+      }
+      return tempArr;
+    } else if(typeof(json) !== "object") {
+      return json;
+    }
+  }
+  catch(err){
+      return "Error getting data";  
+  }
+  
+}
+/**
+* A special function that runs when the spreadsheet is open, used to add a
+* custom menu to the spreadsheet.
+*/
+function onOpen() {
+  var spreadsheet = SpreadsheetApp.getActive();
+  var menuItems = [
+    {name: 'Fetch Dividend Amount (IEX)', functionName: 'fetchDivAmt'},
+    {name: 'Fetch Ex-Dividend Date (IEX)', functionName: 'fetchExDate'},
+    {name: 'Fetch Dividend Payout Date (IEX)', functionName: 'fetchPayDate'},
+    {name: 'Replace Div Amount IEX Call', functionName: 'replaceDivAmt'},
+    {name: 'Replace Ex Date IEX Call', functionName: 'replaceExDate'},
+    {name: 'Replace Payout Date IEX Call', functionName: 'replacePayDate'}
+    ];
+  spreadsheet.addMenu('Dividend Tools', menuItems);
+}
+
+/** 
+* make IEX call for Dividend Amount
+*/
+function fetchDivAmt() {
+  var ss = SpreadsheetApp.getActive();
+  var portfolioSheet = ss.getSheetByName('master');
+  var rowCount = portfolioSheet.getDataRange().getNumRows();
+  var divAmtCol = 41;
+  portfolioSheet.getRange(2, divAmtCol, rowCount - 1, 1).setFormulaR1C1('=IMPORTDATA(CONCATENATE(iex_data,R[0]C[-39],div_amt,iex_token))*R[0]C[-17]');
+  SpreadsheetApp.flush();
+}
+
+/** 
+* make IEX call for Ex-Dividend Date
+*/
+function fetchExDate() {
+  var ss = SpreadsheetApp.getActive();
+  var portfolioSheet = ss.getSheetByName('master');
+  var rowCount = portfolioSheet.getDataRange().getNumRows();
+  var exDateCol = 45;
+  portfolioSheet.getRange(2, exDateCol, rowCount - 1, 1).setFormulaR1C1('=IMPORTDATA(CONCATENATE(iex_data,R[0]C[-43],ex_date,iex_token))');
+  SpreadsheetApp.flush();
+}
+
+/** 
+* make IEX call for Dividend Payout Date
+*/
+function fetchPayDate() {
+  var ss = SpreadsheetApp.getActive();
+  var portfolioSheet = ss.getSheetByName('master');
+  var rowCount = portfolioSheet.getDataRange().getNumRows();
+  var payDateCol = 43;
+  portfolioSheet.getRange(2, payDateCol, rowCount - 1, 1).setFormulaR1C1('=IMPORTDATA(CONCATENATE(iex_data,R[0]C[-41],pay_date,iex_token))');
+  SpreadsheetApp.flush();
+}
+
+/**
+*Replace Div Amount IEX call
+*/
+function replaceDivAmt(){
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("master");
+  var range = sheet.getRange("AO2:AO");     
+  range.copyTo(range, {contentsOnly:true});
+}
+
+/**
+*Replace Ex Date IEX call
+*/
+function replaceExDate(){
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("master");
+  var range = sheet.getRange("AS2:AS");     
+  range.copyTo(range, {contentsOnly:true});
+}
+
+/**
+*Replace Pay Date IEX call
+*/
+function replacePayDate(){
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("master");
+  var range = sheet.getRange("AQ2:AQ");     
+  range.copyTo(range, {contentsOnly:true});
+}
